@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthGuard, useAuth } from 'lemma-sdk/react';
@@ -25,7 +26,11 @@ const queryClient = new QueryClient({
   },
 });
 
-function CustomSignIn() {
+interface CustomSignInProps {
+  onViewDemo: () => void;
+}
+
+function CustomSignIn({ onViewDemo }: CustomSignInProps) {
   const { redirectToAuth } = useAuth(lemmaClient!);
 
   const handleSignIn = () => {
@@ -49,12 +54,21 @@ function CustomSignIn() {
           Sign in to connect to your Second Brain workspace and AI agent.
         </p>
 
-        <button
-          onClick={handleSignIn}
-          className="w-full gradient-bg hover:opacity-90 text-white font-medium py-3 px-4 rounded-xl transition-all cursor-pointer shadow-lg shadow-indigo-500/20"
-        >
-          Sign In with Lemma
-        </button>
+        <div className="flex flex-col gap-3">
+          <button
+            onClick={handleSignIn}
+            className="w-full gradient-bg hover:opacity-90 text-white font-medium py-3.5 px-4 rounded-xl transition-all cursor-pointer shadow-lg shadow-indigo-500/20"
+          >
+            Sign In with Lemma
+          </button>
+          
+          <button
+            onClick={onViewDemo}
+            className="w-full bg-white/5 hover:bg-white/10 border border-white/10 text-white/80 hover:text-white font-medium py-3.5 px-4 rounded-xl transition-all cursor-pointer"
+          >
+            View Demo
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -109,15 +123,50 @@ VITE_LEMMA_POD_ID=your_pod_id_here`}
 }
 
 function AuthenticatedApp() {
+  const [isDemoMode, setIsDemoMode] = useState(false);
+
   if (!isLemmaConfigured || !lemmaClient) {
     return <ConfigErrorPage />;
+  }
+
+  const handleEnterDemo = () => {
+    (window as any).isLemmaDemoMode = true;
+    setIsDemoMode(true);
+  };
+
+  const router = (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route element={<Layout />}>
+          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/knowledge" element={<KnowledgePage />} />
+          <Route path="/upload" element={<UploadPage />} />
+          <Route path="/chat" element={<ChatPage />} />
+          <Route path="/tasks" element={<TasksPage />} />
+          <Route path="/insights" element={<InsightsPage />} />
+          <Route path="/decisions" element={<DecisionPage />} />
+          <Route path="/graph" element={<KnowledgeGraphPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
+        </Route>
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </BrowserRouter>
+  );
+
+  if (isDemoMode) {
+    return (
+      <QueryClientProvider client={queryClient}>
+        {router}
+      </QueryClientProvider>
+    );
   }
 
   return (
     <QueryClientProvider client={queryClient}>
       <AuthGuard
         client={lemmaClient}
-        unauthenticatedFallback={<CustomSignIn />}
+        unauthenticatedFallback={<CustomSignIn onViewDemo={handleEnterDemo} />}
         loadingFallback={
           <div className="min-h-screen bg-[#0B1220] flex items-center justify-center">
             <div className="flex flex-col items-center gap-3">
@@ -129,23 +178,7 @@ function AuthenticatedApp() {
           </div>
         }
       >
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<LandingPage />} />
-            <Route element={<Layout />}>
-              <Route path="/dashboard" element={<DashboardPage />} />
-              <Route path="/knowledge" element={<KnowledgePage />} />
-              <Route path="/upload" element={<UploadPage />} />
-              <Route path="/chat" element={<ChatPage />} />
-              <Route path="/tasks" element={<TasksPage />} />
-              <Route path="/insights" element={<InsightsPage />} />
-              <Route path="/decisions" element={<DecisionPage />} />
-              <Route path="/graph" element={<KnowledgeGraphPage />} />
-              <Route path="/settings" element={<SettingsPage />} />
-            </Route>
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </BrowserRouter>
+        {router}
       </AuthGuard>
     </QueryClientProvider>
   );

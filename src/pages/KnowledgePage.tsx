@@ -22,10 +22,13 @@ export default function KnowledgePage() {
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
 
+  const isDemo = (window as any).isLemmaDemoMode === true;
+
   // 1. Load real records from the "Knowledge" table inside the connected pod
   const { records, isLoading, error } = useRecords<any>({
     client: lemmaClient!,
     tableName: 'Knowledge',
+    enabled: !isDemo && !!lemmaClient,
   });
 
   // 2. Safe mapping function for robust field extraction
@@ -122,12 +125,12 @@ export default function KnowledgePage() {
       </motion.div>
 
       {/* Loading state */}
-      {isLoading ? (
+      {isLoading && !isDemo ? (
         <div className="flex flex-col items-center justify-center py-24 gap-3">
           <Loader2 className="w-8 h-8 text-blue-400 animate-spin" />
           <span className="text-xs text-white/30 tracking-widest uppercase">Fetching Knowledge Base...</span>
         </div>
-      ) : error ? (
+      ) : error && !isDemo ? (
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <AlertCircle className="w-10 h-10 text-red-400 mb-3" />
           <p className="text-sm text-white/70">Failed to load Knowledge table</p>
