@@ -24,10 +24,10 @@ export default function KnowledgePage() {
 
   const isDemo = (window as any).isLemmaDemoMode === true;
 
-  // 1. Load real records from the "Knowledge" table inside the connected pod
+  // 1. Load real records from the "knowledge" table inside the connected pod
   const { records, isLoading, error } = useRecords<any>({
     client: lemmaClient!,
-    tableName: 'Knowledge',
+    tableName: 'knowledge',
     enabled: !isDemo && !!lemmaClient,
   });
 
@@ -36,15 +36,22 @@ export default function KnowledgePage() {
     const getField = (keys: string[], fallback: any = '') => {
       for (const key of keys) {
         if (rec[key] !== undefined) return rec[key];
-        if (rec[key.toLowerCase()] !== undefined) return rec[key.toLowerCase()];
-        if (rec[key.toUpperCase()] !== undefined) return rec[key.toUpperCase()];
+        
+        const lower = key.toLowerCase();
+        if (rec[lower] !== undefined) return rec[lower];
+        
+        const upper = key.toUpperCase();
+        if (rec[upper] !== undefined) return rec[upper];
+        
+        const capitalized = key.charAt(0).toUpperCase() + key.slice(1).toLowerCase();
+        if (rec[capitalized] !== undefined) return rec[capitalized];
       }
       return fallback;
     };
 
     const title = getField(['title', 'name', 'Name', 'title_text'], 'Untitled Document');
     const category = getField(['category', 'Category', 'type'], 'General');
-    const summary = getField(['summary', 'aiSummary', 'description', 'ai_summary'], 'No AI summary available.');
+    const summary = getField(['summary', 'content', 'aiSummary', 'description', 'ai_summary'], 'No AI summary available.');
     const type = getField(['type', 'fileType', 'file_type'], 'Document');
     const connections = Number(getField(['connections', 'links'], 0));
     const rawTags = getField(['tags', 'Tags'], []);
